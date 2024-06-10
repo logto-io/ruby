@@ -1,21 +1,21 @@
-require 'net/http'
-require 'uri'
-require_relative 'index_response'
-require_relative 'index_constants'
-require_relative 'utils'
-require_relative 'errors'
+require "net/http"
+require "uri"
+require_relative "index_types"
+require_relative "index_constants"
+require_relative "utils"
+require_relative "errors"
 
 class LogtoCore
   attr_reader :endpoint, :oidc_config
 
   def initialize(endpoint:)
     @endpoint = endpoint
-    @oidc_config = fetch_oidc_config()
+    @oidc_config = fetch_oidc_config
   end
 
   def revoke(client_id:, token:)
     response = Net::HTTP.post_form(
-      URI.parse(self.oidc_config.revocation_endpoint),
+      URI.parse(oidc_config.revocation_endpoint),
       {
         QueryKey[:token] => token,
         QueryKey[:client_id] => client_id
@@ -37,7 +37,7 @@ class LogtoCore
     parameters[QueryKey[:resource]] = resource if resource
 
     response = Net::HTTP.post_form(
-      URI.parse(self.oidc_config.token_endpoint),
+      URI.parse(oidc_config.token_endpoint),
       parameters
     )
 
@@ -49,7 +49,7 @@ class LogtoCore
   end
 
   def fetch_token_by_refresh_token(client_id:, refresh_token:, resource: nil, organization_id: nil, scopes: nil)
-    raise ArgumentError, 'Scopes must be an array' if scopes && !scopes.is_a?(Array)
+    raise ArgumentError, "Scopes must be an array" if scopes && !scopes.is_a?(Array)
 
     parameters = {
       QueryKey[:client_id] => client_id,
@@ -58,10 +58,10 @@ class LogtoCore
     }
     parameters[QueryKey[:resource]] = resource if resource
     parameters[QueryKey[:organization_id]] = organization_id if organization_id
-    parameters[QueryKey[:scope]] = scopes.join(' ') if scopes&.any?
+    parameters[QueryKey[:scope]] = scopes.join(" ") if scopes&.any?
 
     response = Net::HTTP.post_form(
-      URI.parse(self.oidc_config.token_endpoint),
+      URI.parse(oidc_config.token_endpoint),
       parameters
     )
 
@@ -79,46 +79,60 @@ class LogtoCore
       QueryKey[:code_challenge] => code_challenge,
       QueryKey[:code_challenge_method] => CodeChallengeMethod[:S256],
       QueryKey[:state] => state,
-      QueryKey[:response_type] => 'code',
+      QueryKey[:response_type] => "code"
     }
 
-    parameters[QueryKey[:prompt]] = prompt&.any? ? prompt.join(' ') : Prompt[:consent]
-  
-    computed_scopes = include_reserved_scopes ? LogtoUtils.with_reserved_scopes(scopes: scopes).join(' ') : scopes&.join(' ')
+    parameters[QueryKey[:prompt]] = prompt&.any? ? prompt.join(" ") : Prompt[:consent]
+
+    computed_scopes = include_reserved_scopes ? LogtoUtils.with_reserved_scopes(scopes).join(" ") : scopes&.join(" ")
     parameters[QueryKey[:scope]] = computed_scopes if computed_scopes
-  
+
     parameters[QueryKey[:login_hint]] = login_hint if login_hint
-  
+
     if direct_sign_in
       parameters[QueryKey[:direct_sign_in]] = "#{direct_sign_in[:method]}:#{direct_sign_in[:target]}"
     end
-  
-    (resources || []).each do |resource|
-      parameters[QueryKey[:resource]] = resource
-    end
-  
+
+    parameters[QueryKey[:resource]] = resources if resources&.any?
+
     if first_screen
       parameters[QueryKey[:first_screen]] = first_screen
     elsif interaction_mode
       parameters[QueryKey[:interaction_mode]] = interaction_mode
     end
-  
+
     if extra_params
       extra_params.each do |key, value|
         parameters[key] = value
       end
     end
-  
-    query_string = URI.encode_www_form(parameters)
-    "#{self.oidc_config.authorization_endpoint}?#{query_string}"
+
+    parameters.each_key do |key|
+      raise ArgumentError, "Parameters contain nil key, please check the input" if key.nil?
+    end
+
+    uri = URI.parse(oidc_config.authorization_endpoint)
+    uri.query = URI.encode_www_form(parameters)
+    uri.to_s
+  end
+
+  def generate_sign_out_uri(client_id:, post_logout_redirect_uri: nil)
+    parameters = {
+      QueryKey[:client_id] => client_id
+    }
+    parameters[QueryKey[:post_logout_redirect_uri]] = post_logout_redirect_uri if post_logout_redirect_uri
+
+    uri = URI.parse(oidc_config.end_session_endpoint)
+    uri.query = URI.encode_www_form(parameters)
+    uri.to_s
   end
 
   ### Protected methods ###
   protected
 
   # Function to fetch OIDC config from a Logto endpoint
-  def fetch_oidc_config()
-    response = Net::HTTP.get(URI.join(self.endpoint, DiscoveryPath))
+  def fetch_oidc_config
+    response = Net::HTTP.get(URI.join(endpoint, DiscoveryPath))
     LogtoUtils.parse_json_safe(response, OidcConfigResponse)
   end
 end

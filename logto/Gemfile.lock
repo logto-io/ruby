@@ -1,7 +1,17 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.8.6)
+      public_suffix (>= 2.0.2, < 6.0)
+    bigdecimal (3.1.8)
+    crack (1.0.0)
+      bigdecimal
+      rexml
     diff-lcs (1.5.1)
+    hashdiff (1.1.0)
+    public_suffix (5.0.5)
+    rexml (3.2.9)
+      strscan
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -15,6 +25,11 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.1)
+    strscan (3.1.0)
+    webmock (3.23.1)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
 
 PLATFORMS
   arm64-darwin-23
@@ -22,6 +37,7 @@ PLATFORMS
 
 DEPENDENCIES
   rspec (~> 3.13)
+  webmock (~> 3.23)
 
 BUNDLED WITH
    2.5.11

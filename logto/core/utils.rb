@@ -1,11 +1,12 @@
-require 'json'
-require_relative 'index_constants'
+require "json"
+require_relative "index_constants"
 
 module LogtoUtils
   # Parses a JSON string and maps it to a given Struct class, handling unknown keys.
-  # 
+  #
   # @param json_str [String] The JSON string to be parsed.
-  # @param struct_class [Class] The Struct class to map the JSON data to. The strcut class must have a `:unknown_keys` member.
+  # @param struct_class [Class] The Struct class to map the JSON data to. The strcut class must have a
+  #   `:unknown_keys` member and a `keyword_init: true` keyword argument.
   # @return [Struct] An instance of the given Struct class populated with known keys and a hash of unknown keys.
   def self.parse_json_safe(json_str, struct_class)
     data = JSON.parse(json_str, symbolize_names: true)
@@ -24,5 +25,17 @@ module LogtoUtils
     unique_scopes = scopes || []
     unique_scopes += LogtoCore::ReservedScope.values
     unique_scopes.uniq
+  end
+
+  def self.generate_code_verifier
+    SecureRandom.urlsafe_base64(32)
+  end
+
+  def self.generate_code_challenge(code_verifier)
+    Base64.urlsafe_encode64(Digest::SHA256.digest(code_verifier)).tr("=", "")
+  end
+
+  def self.generate_state
+    SecureRandom.urlsafe_base64(32)
   end
 end

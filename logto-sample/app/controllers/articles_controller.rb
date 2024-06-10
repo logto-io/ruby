@@ -1,12 +1,22 @@
-require "../logto/core"
+require "../logto/client/index"
 
 class ArticlesController < ApplicationController
-  def index
-    puts LogtoCore.new(endpoint: 'http://localhost:3002').generate_sign_in_uri(
-      client_id: 'client_id',
-      redirect_uri: 'http://localhost:3000/auth/logto/callback',
-      code_challenge: 'code_challenge',
-      state: 'state',
+  def initialize
+    super
+    @client = LogtoClient.new(
+      config: LogtoClient::Config.new(
+        endpoint: "http://localhost:3002",
+        app_id: "client_id",
+        app_secret: "client_secret"
+      ),
+      navigate: ->(uri) { redirect_to(uri, allow_other_host: true) }
     )
+  end
+
+  def index
+  end
+
+  def sign_in
+    @client.signIn(redirect_uri: "https://example.com/callback")
   end
 end
