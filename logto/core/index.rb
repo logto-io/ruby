@@ -1,0 +1,124 @@
+require 'net/http'
+require 'uri'
+require_relative 'index_response'
+require_relative 'index_constants'
+require_relative 'utils'
+require_relative 'errors'
+
+class LogtoCore
+  attr_reader :endpoint, :oidc_config
+
+  def initialize(endpoint:)
+    @endpoint = endpoint
+    @oidc_config = fetch_oidc_config()
+  end
+
+  def revoke(client_id:, token:)
+    response = Net::HTTP.post_form(
+      URI.parse(self.oidc_config.revocation_endpoint),
+      {
+        QueryKey[:token] => token,
+        QueryKey[:client_id] => client_id
+      }
+    )
+    unless response.is_a?(Net::HTTPSuccess)
+      raise LogtoRevocationError.new(response.message, response: response)
+    end
+  end
+
+  def fetch_token_by_authorization_code(client_id:, redirect_uri:, code_verifier:, code:, resource: nil)
+    parameters = {
+      QueryKey[:client_id] => client_id,
+      QueryKey[:code] => code,
+      QueryKey[:code_verifier] => code_verifier,
+      QueryKey[:redirect_uri] => redirect_uri,
+      QueryKey[:grant_type] => TokenGrantType[:authorization_code]
+    }
+    parameters[QueryKey[:resource]] = resource if resource
+
+    response = Net::HTTP.post_form(
+      URI.parse(self.oidc_config.token_endpoint),
+      parameters
+    )
+
+    unless response.is_a?(Net::HTTPSuccess)
+      raise LogtoTokenError.new(response.message, response: response)
+    end
+
+    LogtoUtils.parse_json_safe(response.body, TokenResponse)
+  end
+
+  def fetch_token_by_refresh_token(client_id:, refresh_token:, resource: nil, organization_id: nil, scopes: nil)
+    raise ArgumentError, 'Scopes must be an array' if scopes && !scopes.is_a?(Array)
+
+    parameters = {
+      QueryKey[:client_id] => client_id,
+      QueryKey[:refresh_token] => refresh_token,
+      QueryKey[:grant_type] => TokenGrantType[:refresh_token]
+    }
+    parameters[QueryKey[:resource]] = resource if resource
+    parameters[QueryKey[:organization_id]] = organization_id if organization_id
+    parameters[QueryKey[:scope]] = scopes.join(' ') if scopes&.any?
+
+    response = Net::HTTP.post_form(
+      URI.parse(self.oidc_config.token_endpoint),
+      parameters
+    )
+
+    unless response.is_a?(Net::HTTPSuccess)
+      raise LogtoTokenError.new(response.message, response: response)
+    end
+
+    LogtoUtils.parse_json_safe(response.body, TokenResponse)
+  end
+
+  def generate_sign_in_uri(client_id:, redirect_uri:, code_challenge:, state:, scopes: nil, resources: nil, prompt: nil, first_screen: nil, interaction_mode: nil, login_hint: nil, direct_sign_in: nil, extra_params: nil, include_reserved_scopes: true)
+    parameters = {
+      QueryKey[:client_id] => client_id,
+      QueryKey[:redirect_uri] => redirect_uri,
+      QueryKey[:code_challenge] => code_challenge,
+      QueryKey[:code_challenge_method] => CodeChallengeMethod[:S256],
+      QueryKey[:state] => state,
+      QueryKey[:response_type] => 'code',
+    }
+
+    parameters[QueryKey[:prompt]] = prompt&.any? ? prompt.join(' ') : Prompt[:consent]
+  
+    computed_scopes = include_reserved_scopes ? LogtoUtils.with_reserved_scopes(scopes: scopes).join(' ') : scopes&.join(' ')
+    parameters[QueryKey[:scope]] = computed_scopes if computed_scopes
+  
+    parameters[QueryKey[:login_hint]] = login_hint if login_hint
+  
+    if direct_sign_in
+      parameters[QueryKey[:direct_sign_in]] = "#{direct_sign_in[:method]}:#{direct_sign_in[:target]}"
+    end
+  
+    (resources || []).each do |resource|
+      parameters[QueryKey[:resource]] = resource
+    end
+  
+    if first_screen
+      parameters[QueryKey[:first_screen]] = first_screen
+    elsif interaction_mode
+      parameters[QueryKey[:interaction_mode]] = interaction_mode
+    end
+  
+    if extra_params
+      extra_params.each do |key, value|
+        parameters[key] = value
+      end
+    end
+  
+    query_string = URI.encode_www_form(parameters)
+    "#{self.oidc_config.authorization_endpoint}?#{query_string}"
+  end
+
+  ### Protected methods ###
+  protected
+
+  # Function to fetch OIDC config from a Logto endpoint
+  def fetch_oidc_config()
+    response = Net::HTTP.get(URI.join(self.endpoint, DiscoveryPath))
+    LogtoUtils.parse_json_safe(response, OidcConfigResponse)
+  end
+end
