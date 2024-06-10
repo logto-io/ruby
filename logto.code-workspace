@@ -1,0 +1,24 @@
+{
+  "folders": [
+    // Since the top level might contain some documentation or build files, we still want it to show up
+    {
+      "name": "@logto/ruby",
+      "path": ".",
+    },
+    {
+      "name": "logto",
+      "path": "logto",
+    },
+    {
+      "name": "logto-sample",
+      "path": "logto-sample",
+    },
+  ],
+  "settings": {
+    // We don't want to show duplicates, so we hide the directories that are already showing up as workspaces
+    "files.exclude": {
+      "/logto": true,
+      "/logto-sample": true,
+    }
+  },
+}
