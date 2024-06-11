@@ -38,4 +38,8 @@ module LogtoUtils
   def self.generate_state
     SecureRandom.urlsafe_base64(32)
   end
+
+  def self.build_access_token_key(resource:, organization_id: nil)
+    "#{organization_id ? ":#{organization_id}" : ""}:#{resource || "openid"}"
+  end
 end

@@ -9,4 +9,5 @@ Rails.application.routes.draw do
   # root "posts#index"
   get "/articles", to: "articles#index"
   get "/sign-in", to: "articles#sign_in"
+  get "/callback", to: "articles#callback"
 end

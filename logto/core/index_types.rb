@@ -57,4 +57,11 @@ class LogtoCore
     :organizations, :organization_roles, :roles, :unknown_keys,
     keyword_init: true
   )
+
+  # The structured access token.
+  #
+  # @attr [String] token The access token string.
+  # @attr [String] scope The scopes that this token has.
+  # @attr [Integer] expires_at The epoch timestamp when this token will expire.
+  AccessToken = Struct.new(:token, :scope, :expires_at, keyword_init: true)
 end

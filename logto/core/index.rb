@@ -26,9 +26,10 @@ class LogtoCore
     end
   end
 
-  def fetch_token_by_authorization_code(client_id:, redirect_uri:, code_verifier:, code:, resource: nil)
+  def fetch_token_by_authorization_code(client_id:, client_secret:, redirect_uri:, code_verifier:, code:, resource: nil)
     parameters = {
       QueryKey[:client_id] => client_id,
+      QueryKey[:client_secret] => client_secret,
       QueryKey[:code] => code,
       QueryKey[:code_verifier] => code_verifier,
       QueryKey[:redirect_uri] => redirect_uri,

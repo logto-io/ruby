@@ -4,7 +4,7 @@ require_relative "../core/utils"
 class LogtoClient
   # The configuration object for the Logto client.
   #
-  # @attr [String] endpoint The endpoint for the Logto server, you can get it from the integration guide
+  # @attr [URI] endpoint The endpoint for the Logto server, you can get it from the integration guide
   #   or the team settings page of the Logto Console.
   #   @example
   #     'https://foo.logto.app'
@@ -26,7 +26,7 @@ class LogtoClient
   class Config
     attr_reader :endpoint, :app_id, :app_secret, :scopes, :resources, :prompt
 
-    # @param endpoint [String] The endpoint for the Logto server.
+    # @param endpoint [String, URI] The endpoint for the Logto server.
     # @param app_id [String] The client ID of your application.
     # @param app_secret [String] The client secret of your application.
     # @param scopes [Array<String>] The scopes that your application needs to access.
@@ -36,10 +36,11 @@ class LogtoClient
     def initialize(endpoint:, app_id:, app_secret:, scopes: [], resources: [], prompt: LogtoCore::Prompt[:consent], include_reserved_scopes: true)
       raise ArgumentError, "Scopes must be an array" if scopes && !scopes.is_a?(Array)
       raise ArgumentError, "Resources must be an array" if resources && !resources.is_a?(Array)
+      raise ArgumentError, "Endpoint must not be empty" if endpoint.nil? || endpoint == ""
 
       computed_scopes = include_reserved_scopes ? LogtoUtils.with_reserved_scopes(scopes) : scopes
 
-      @endpoint = endpoint
+      @endpoint = endpoint.is_a?(URI) ? endpoint : URI.parse(endpoint)
       @app_id = app_id
       @app_secret = app_secret
       @scopes = computed_scopes
@@ -48,48 +49,5 @@ class LogtoClient
     end
   end
 
-  # An abstract class for storing data.
-  #
-  # This class is used by the Logto client to store the session and token data.
-  #
-  # @abstract
-  class AbstractStorage
-    def initialize
-      raise NotImplementedError
-    end
-
-    def get(key)
-      raise NotImplementedError
-    end
-
-    def set(key, value)
-      raise NotImplementedError
-    end
-
-    def remove(key)
-      raise NotImplementedError
-    end
-  end
-
-  # A storage class that stores data in memory.
-  #
-  # WARNING: This storage is not suitable for production use.
-  class MemoryStorage < AbstractStorage
-    def initialize
-      @store = {}
-      warn "WARNING: MemoryStorage is not suitable for production use. Replace it with a persistent storage for production."
-    end
-
-    def get(key)
-      @store[key]
-    end
-
-    def set(key, value)
-      @store[key] = value
-    end
-
-    def remove(key)
-      @store.delete(key)
-    end
-  end
+  SignInSession = Struct.new(:redirect_uri, :code_verifier, :state, :post_redirect_uri, keyword_init: true)
 end

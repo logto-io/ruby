@@ -7,6 +7,7 @@ class LogtoCore
 
   QueryKey = {
     client_id: "client_id",
+    client_secret: "client_secret",
     token: "token",
     code: "code",
     code_verifier: "code_verifier",
@@ -25,7 +26,9 @@ class LogtoCore
     login_hint: "login_hint",
     direct_sign_in: "direct_sign_in",
     first_screen: "first_screen",
-    interaction_mode: "interaction_mode"
+    interaction_mode: "interaction_mode",
+    error: "error",
+    error_description: "error_description"
   }
 
   TokenGrantType = {
