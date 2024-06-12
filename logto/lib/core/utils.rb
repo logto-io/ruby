@@ -23,7 +23,7 @@ module LogtoUtils
   #   # => ['foo', 'bar', 'openid', 'offline_access', 'profile']
   def self.with_reserved_scopes(scopes)
     unique_scopes = scopes || []
-    unique_scopes += LogtoCore::ReservedScope.values
+    unique_scopes += LogtoCore::RESERVED_SCOPE.values
     unique_scopes.uniq
   end
 

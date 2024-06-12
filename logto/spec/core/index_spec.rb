@@ -18,7 +18,7 @@ RSpec.describe LogtoCore do
 
   before do
     # Stub the HTTP request to fetch the OIDC config
-    stub_request(:get, URI.join(endpoint, LogtoCore::DiscoveryPath).to_s)
+    stub_request(:get, URI.join(endpoint, LogtoCore::DISCOVERY_PATH).to_s)
       .to_return(
         status: 200,
         body: oidc_config_response,

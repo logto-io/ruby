@@ -25,12 +25,12 @@ RSpec.describe LogtoClient::Config do
       endpoint: "https://example.com",
       app_id: "app_id",
       app_secret: "app_secret",
-      scopes: ["openid", LogtoCore::UserScope[:organizations]],
+      scopes: ["openid", LogtoCore::USER_SCOPE[:organizations]],
       resources: ["resource"]
     )
 
-    expect(config.resources).to eq([LogtoCore::ReservedResource[:organization], "resource"])
-    expect(config.scopes).to eq(["openid", LogtoCore::UserScope[:organizations], "offline_access", "profile"])
+    expect(config.resources).to eq([LogtoCore::RESERVED_RESOURCE[:organization], "resource"])
+    expect(config.scopes).to eq(["openid", LogtoCore::USER_SCOPE[:organizations], "offline_access", "profile"])
   end
 
   it "initializes with the correct values when no prompt is provided and include_reserved_scopes is false" do

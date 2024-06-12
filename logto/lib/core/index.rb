@@ -19,9 +19,9 @@ class LogtoCore
     response = Net::HTTP.post_form(
       URI.parse(oidc_config.revocation_endpoint),
       {
-        QueryKey[:token] => token,
-        QueryKey[:client_id] => client_id,
-        QueryKey[:client_secret] => client_secret
+        QUERY_KEY[:token] => token,
+        QUERY_KEY[:client_id] => client_id,
+        QUERY_KEY[:client_secret] => client_secret
       }
     )
 
@@ -31,14 +31,14 @@ class LogtoCore
 
   def fetch_token_by_authorization_code(client_id:, client_secret:, redirect_uri:, code_verifier:, code:, resource: nil)
     parameters = {
-      QueryKey[:client_id] => client_id,
-      QueryKey[:client_secret] => client_secret,
-      QueryKey[:code] => code,
-      QueryKey[:code_verifier] => code_verifier,
-      QueryKey[:redirect_uri] => redirect_uri,
-      QueryKey[:grant_type] => TokenGrantType[:authorization_code]
+      QUERY_KEY[:client_id] => client_id,
+      QUERY_KEY[:client_secret] => client_secret,
+      QUERY_KEY[:code] => code,
+      QUERY_KEY[:code_verifier] => code_verifier,
+      QUERY_KEY[:redirect_uri] => redirect_uri,
+      QUERY_KEY[:grant_type] => TOKEN_GRANT_TYPE[:authorization_code]
     }
-    parameters[QueryKey[:resource]] = resource if resource
+    parameters[QUERY_KEY[:resource]] = resource if resource
 
     response = Net::HTTP.post_form(
       URI.parse(oidc_config.token_endpoint),
@@ -55,14 +55,14 @@ class LogtoCore
     raise ArgumentError, "Scopes must be an array" if scopes && !scopes.is_a?(Array)
 
     parameters = {
-      QueryKey[:client_id] => client_id,
-      QueryKey[:client_secret] => client_secret,
-      QueryKey[:refresh_token] => refresh_token,
-      QueryKey[:grant_type] => TokenGrantType[:refresh_token]
+      QUERY_KEY[:client_id] => client_id,
+      QUERY_KEY[:client_secret] => client_secret,
+      QUERY_KEY[:refresh_token] => refresh_token,
+      QUERY_KEY[:grant_type] => TOKEN_GRANT_TYPE[:refresh_token]
     }
-    parameters[QueryKey[:resource]] = resource if resource
-    parameters[QueryKey[:organization_id]] = organization_id if organization_id
-    parameters[QueryKey[:scope]] = scopes.join(" ") if scopes&.any?
+    parameters[QUERY_KEY[:resource]] = resource if resource
+    parameters[QUERY_KEY[:organization_id]] = organization_id if organization_id
+    parameters[QUERY_KEY[:scope]] = scopes.join(" ") if scopes&.any?
 
     response = Net::HTTP.post_form(
       URI.parse(oidc_config.token_endpoint),
@@ -90,31 +90,31 @@ class LogtoCore
 
   def generate_sign_in_uri(client_id:, redirect_uri:, code_challenge:, state:, scopes: nil, resources: nil, prompt: nil, first_screen: nil, interaction_mode: nil, login_hint: nil, direct_sign_in: nil, extra_params: nil, include_reserved_scopes: true)
     parameters = {
-      QueryKey[:client_id] => client_id,
-      QueryKey[:redirect_uri] => redirect_uri,
-      QueryKey[:code_challenge] => code_challenge,
-      QueryKey[:code_challenge_method] => CodeChallengeMethod[:S256],
-      QueryKey[:state] => state,
-      QueryKey[:response_type] => "code"
+      QUERY_KEY[:client_id] => client_id,
+      QUERY_KEY[:redirect_uri] => redirect_uri,
+      QUERY_KEY[:code_challenge] => code_challenge,
+      QUERY_KEY[:code_challenge_method] => CODE_CHALLENGE_METHOD[:S256],
+      QUERY_KEY[:state] => state,
+      QUERY_KEY[:response_type] => "code"
     }
 
-    parameters[QueryKey[:prompt]] = prompt&.any? ? prompt.join(" ") : Prompt[:consent]
+    parameters[QUERY_KEY[:prompt]] = prompt&.any? ? prompt.join(" ") : PROMPT[:consent]
 
     computed_scopes = include_reserved_scopes ? LogtoUtils.with_reserved_scopes(scopes).join(" ") : scopes&.join(" ")
-    parameters[QueryKey[:scope]] = computed_scopes if computed_scopes
+    parameters[QUERY_KEY[:scope]] = computed_scopes if computed_scopes
 
-    parameters[QueryKey[:login_hint]] = login_hint if login_hint
+    parameters[QUERY_KEY[:login_hint]] = login_hint if login_hint
 
     if direct_sign_in
-      parameters[QueryKey[:direct_sign_in]] = "#{direct_sign_in[:method]}:#{direct_sign_in[:target]}"
+      parameters[QUERY_KEY[:direct_sign_in]] = "#{direct_sign_in[:method]}:#{direct_sign_in[:target]}"
     end
 
-    parameters[QueryKey[:resource]] = resources if resources&.any?
+    parameters[QUERY_KEY[:resource]] = resources if resources&.any?
 
     if first_screen
-      parameters[QueryKey[:first_screen]] = first_screen
+      parameters[QUERY_KEY[:first_screen]] = first_screen
     elsif interaction_mode
-      parameters[QueryKey[:interaction_mode]] = interaction_mode
+      parameters[QUERY_KEY[:interaction_mode]] = interaction_mode
     end
 
     extra_params&.each do |key, value|
@@ -132,9 +132,9 @@ class LogtoCore
 
   def generate_sign_out_uri(client_id:, post_logout_redirect_uri: nil)
     parameters = {
-      QueryKey[:client_id] => client_id
+      QUERY_KEY[:client_id] => client_id
     }
-    parameters[QueryKey[:post_logout_redirect_uri]] = post_logout_redirect_uri if post_logout_redirect_uri
+    parameters[QUERY_KEY[:post_logout_redirect_uri]] = post_logout_redirect_uri if post_logout_redirect_uri
 
     uri = URI.parse(oidc_config.end_session_endpoint)
     uri.query = URI.encode_www_form(parameters)
@@ -146,7 +146,7 @@ class LogtoCore
   # Function to fetch OIDC config from a Logto endpoint
   def fetch_oidc_config
     config_hash = @cache&.get("oidc_config") || begin
-      response = Net::HTTP.get(URI.join(endpoint, DiscoveryPath))
+      response = Net::HTTP.get(URI.join(endpoint, DISCOVERY_PATH))
       @cache&.set("oidc_config", response)
       response
     end

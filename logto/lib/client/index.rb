@@ -89,23 +89,23 @@ class LogtoClient
     data = @storage.get(STORAGE_KEY[:sign_in_session])
     raise SessionNotFoundError, "No sign-in session found" unless data
 
-    error = query_params[LogtoCore::QueryKey[:error]]
-    error_description = query_params[LogtoCore::QueryKey[:error_description]]
+    error = query_params[LogtoCore::QUERY_KEY[:error]]
+    error_description = query_params[LogtoCore::QUERY_KEY[:error_description]]
     raise CallbackErrorFromServer, "Error: #{error}, Description: #{error_description}" if error
 
     current_session = SignInSession.new(@storage.get(STORAGE_KEY[:sign_in_session]))
     # A loose URI check here
     raise SessionMismatchError, "Redirect URI mismatch" unless url.start_with?(current_session.redirect_uri)
-    raise SessionMismatchError, "No state found in query parameters" unless query_params[LogtoCore::QueryKey[:state]]
-    raise SessionMismatchError, "Session state mismatch" unless current_session.state == query_params[LogtoCore::QueryKey[:state]]
-    raise SessionMismatchError, "No code found in query parameters" unless query_params[LogtoCore::QueryKey[:code]]
+    raise SessionMismatchError, "No state found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:state]]
+    raise SessionMismatchError, "Session state mismatch" unless current_session.state == query_params[LogtoCore::QUERY_KEY[:state]]
+    raise SessionMismatchError, "No code found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:code]]
 
     token_response = @core.fetch_token_by_authorization_code(
       client_id: @config.app_id,
       client_secret: @config.app_secret,
       redirect_uri: current_session.redirect_uri,
       code_verifier: current_session.code_verifier,
-      code: query_params[LogtoCore::QueryKey[:code]]
+      code: query_params[LogtoCore::QUERY_KEY[:code]]
     )
 
     verify_jwt(token: token_response[:id_token], client_id: @config.app_id)

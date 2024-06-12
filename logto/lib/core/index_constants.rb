@@ -1,11 +1,7 @@
 class LogtoCore
-  DiscoveryPath = "/oidc/.well-known/openid-configuration"
+  DISCOVERY_PATH = "/oidc/.well-known/openid-configuration"
 
-  ContentType = {
-    form_url_encoded: {"Content-Type" => "application/x-www-form-urlencoded"}
-  }
-
-  QueryKey = {
+  QUERY_KEY = {
     client_id: "client_id",
     client_secret: "client_secret",
     token: "token",
@@ -31,16 +27,16 @@ class LogtoCore
     error_description: "error_description"
   }
 
-  TokenGrantType = {
+  TOKEN_GRANT_TYPE = {
     authorization_code: "authorization_code",
     refresh_token: "refresh_token"
   }
 
-  CodeChallengeMethod = {
+  CODE_CHALLENGE_METHOD = {
     S256: "S256"
   }
 
-  Prompt = {
+  PROMPT = {
     login: "login",
     none: "none",
     consent: "consent",
@@ -48,14 +44,14 @@ class LogtoCore
   }
 
   # Scopes that reserved by Logto, which will be added to the auth request automatically.
-  ReservedScope = {
+  RESERVED_SCOPE = {
     openid: "openid",
     offline_access: "offline_access",
     profile: "profile"
   }
 
   # Scopes for ID Token and Userinfo Endpoint.
-  UserScope = {
+  USER_SCOPE = {
     # Scope for basic user ingo.
     profile: "profile",
     # Scope for email address.
@@ -75,7 +71,7 @@ class LogtoCore
   }
 
   # Resources that reserved by Logto, which cannot be defined by users.
-  ReservedResource = {
+  RESERVED_RESOURCE = {
     # The resource for organization template per {https://github.com/logto-io/rfcs RFC 0001}.
     organization: "urn:logto:resource:organizations"
   }

@@ -33,7 +33,7 @@ class LogtoClient
     # @param resources [Array<String>] The API resources that your application needs to access.
     # @param prompt [String, Array<String>] The prompt parameter to be used for the authorization request.
     # @param include_reserved_scopes [Boolean] Whether to include reserved scopes (`openid`, `offline_access` and `profile`) in the scopes.
-    def initialize(endpoint:, app_id:, app_secret:, scopes: [], resources: [], prompt: LogtoCore::Prompt[:consent], include_reserved_scopes: true)
+    def initialize(endpoint:, app_id:, app_secret:, scopes: [], resources: [], prompt: LogtoCore::PROMPT[:consent], include_reserved_scopes: true)
       raise ArgumentError, "Scopes must be an array" if scopes && !scopes.is_a?(Array)
       raise ArgumentError, "Resources must be an array" if resources && !resources.is_a?(Array)
       raise ArgumentError, "Endpoint must not be empty" if endpoint.nil? || endpoint == ""
@@ -44,7 +44,7 @@ class LogtoClient
       @app_id = app_id
       @app_secret = app_secret
       @scopes = computed_scopes
-      @resources = computed_scopes.include?(LogtoCore::UserScope[:organizations]) ? ([LogtoCore::ReservedResource[:organization]] + resources).uniq : resources
+      @resources = computed_scopes.include?(LogtoCore::USER_SCOPE[:organizations]) ? ([LogtoCore::RESERVED_RESOURCE[:organization]] + resources).uniq : resources
       @prompt = prompt.is_a?(Array) ? prompt : [prompt]
     end
   end
