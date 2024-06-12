@@ -1,5 +1,6 @@
 require "net/http"
 require "uri"
+require "jwt"
 require_relative "index_types"
 require_relative "index_constants"
 require_relative "utils"
@@ -8,8 +9,9 @@ require_relative "errors"
 class LogtoCore
   attr_reader :endpoint, :oidc_config
 
-  def initialize(endpoint:)
+  def initialize(endpoint:, cache: nil)
     @endpoint = endpoint
+    @cache = cache
     @oidc_config = fetch_oidc_config
   end
 
@@ -21,9 +23,9 @@ class LogtoCore
         QueryKey[:client_id] => client_id
       }
     )
-    unless response.is_a?(Net::HTTPSuccess)
-      raise LogtoRevocationError.new(response.message, response: response)
-    end
+
+    raise LogtoRevocationError.new(response.message, response: response) unless
+      response.is_a?(Net::HTTPSuccess)
   end
 
   def fetch_token_by_authorization_code(client_id:, client_secret:, redirect_uri:, code_verifier:, code:, resource: nil)
@@ -42,9 +44,8 @@ class LogtoCore
       parameters
     )
 
-    unless response.is_a?(Net::HTTPSuccess)
-      raise LogtoTokenError.new(response.message, response: response)
-    end
+    raise LogtoTokenError.new(response.message, response: response) unless
+      response.is_a?(Net::HTTPSuccess)
 
     LogtoUtils.parse_json_safe(response.body, TokenResponse)
   end
@@ -66,11 +67,23 @@ class LogtoCore
       parameters
     )
 
-    unless response.is_a?(Net::HTTPSuccess)
-      raise LogtoTokenError.new(response.message, response: response)
+    raise LogtoTokenError.new(response.message, response: response) unless
+      response.is_a?(Net::HTTPSuccess)
+    LogtoUtils.parse_json_safe(response.body, TokenResponse)
+  end
+
+  def fetch_user_info(access_token:)
+    uri = URI.parse(oidc_config.userinfo_endpoint)
+    request = Net::HTTP::Get.new(uri)
+    request["Authorization"] = "Bearer #{access_token}"
+
+    response = Net::HTTP.start(uri.host, uri.port) do |http|
+      http.request(request)
     end
 
-    LogtoUtils.parse_json_safe(response.body, TokenResponse)
+    raise LogtoUserInfoError.new(response.message, response: response) unless
+      response.is_a?(Net::HTTPSuccess)
+    LogtoUtils.parse_json_safe(response.body, UserInfoResponse)
   end
 
   def generate_sign_in_uri(client_id:, redirect_uri:, code_challenge:, state:, scopes: nil, resources: nil, prompt: nil, first_screen: nil, interaction_mode: nil, login_hint: nil, direct_sign_in: nil, extra_params: nil, include_reserved_scopes: true)
@@ -102,10 +115,8 @@ class LogtoCore
       parameters[QueryKey[:interaction_mode]] = interaction_mode
     end
 
-    if extra_params
-      extra_params.each do |key, value|
-        parameters[key] = value
-      end
+    extra_params&.each do |key, value|
+      parameters[key] = value
     end
 
     parameters.each_key do |key|
@@ -128,12 +139,15 @@ class LogtoCore
     uri.to_s
   end
 
-  ### Protected methods ###
   protected
 
   # Function to fetch OIDC config from a Logto endpoint
   def fetch_oidc_config
-    response = Net::HTTP.get(URI.join(endpoint, DiscoveryPath))
-    LogtoUtils.parse_json_safe(response, OidcConfigResponse)
+    config_hash = @cache&.get("oidc_config") || begin
+      response = Net::HTTP.get(URI.join(endpoint, DiscoveryPath))
+      @cache&.set("oidc_config", response)
+      response
+    end
+    LogtoUtils.parse_json_safe(config_hash, OidcConfigResponse)
   end
 end

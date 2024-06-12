@@ -47,4 +47,28 @@ class LogtoClient
       "logto_#{@app_id || "default"}_#{key}"
     end
   end
+
+  class RailsCacheStorage < AbstractStorage
+    def initialize(app_id: nil)
+      @app_id = app_id
+    end
+
+    def get(key)
+      Rails.cache.read(getCacheKey(key))
+    end
+
+    def set(key, value)
+      Rails.cache.write(getCacheKey(key), value, force: true)
+    end
+
+    def remove(key)
+      Rails.cache.delete(getCacheKey(key))
+    end
+
+    protected
+
+    def getCacheKey(key)
+      "logto_cache_#{@app_id || "default"}_#{key}"
+    end
+  end
 end

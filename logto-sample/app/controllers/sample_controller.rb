@@ -1,13 +1,15 @@
 require "../logto/client/index"
 
-class ArticlesController < ApplicationController
+class SampleController < ApplicationController
   before_action :initialize_logto_client
 
   def index
+    @is_authenticated = @client.is_authenticated?
+    @id_token = @client.id_token
   end
 
   def sign_in
-    @client.sign_in(redirect_uri: ENV["LOGTO_REDIRECT_URI"])
+    @client.sign_in(redirect_uri: ENV["LOGTO_REDIRECT_URI"], post_redirect_uri: "/")
   end
 
   def callback

@@ -3,12 +3,15 @@ GEM
   specs:
     addressable (2.8.6)
       public_suffix (>= 2.0.2, < 6.0)
+    base64 (0.2.0)
     bigdecimal (3.1.8)
     crack (1.0.0)
       bigdecimal
       rexml
     diff-lcs (1.5.1)
     hashdiff (1.1.0)
+    jwt (2.8.1)
+      base64
     public_suffix (5.0.5)
     rexml (3.2.9)
       strscan
@@ -36,6 +39,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  jwt (~> 2.8)
   rspec (~> 3.13)
   webmock (~> 3.23)
 

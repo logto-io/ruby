@@ -7,7 +7,7 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
-  get "/articles", to: "articles#index"
-  get "/sign-in", to: "articles#sign_in"
-  get "/callback", to: "articles#callback"
+  get "/", to: "sample#index"
+  get "/sign-in", to: "sample#sign_in"
+  get "/callback", to: "sample#callback"
 end

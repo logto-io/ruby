@@ -1,3 +1,4 @@
+require "jwt"
 require_relative "index_constants"
 require_relative "index_types"
 require_relative "index_storage"
@@ -9,14 +10,16 @@ class LogtoClient
   # @param config [LogtoClient::Config] The configuration object for the Logto client.
   # @param navigate [Proc] The navigation function to be used for the sign-in experience.
   # @param storage [LogtoClient::AbstractStorage] The storage object for the Logto client.
-  def initialize(config:, navigate:, storage:)
+  # @param cache [LogtoClient::AbstractStorage] The cache object for the Logto client.
+  def initialize(config:, navigate:, storage:, cache: RailsCacheStorage.new(app_id: config.app_id))
     raise ArgumentError, "Config must be a LogtoClient::Config" unless config.is_a?(LogtoClient::Config)
     raise ArgumentError, "Navigate must be a Proc" unless navigate.is_a?(Proc)
     raise ArgumentError, "Storage must be a LogtoClient::AbstractStorage" unless storage.is_a?(LogtoClient::AbstractStorage)
     @config = config
     @navigate = navigate
     @storage = storage
-    @core = LogtoCore.new(endpoint: @config.endpoint)
+    @cache = cache
+    @core = LogtoCore.new(endpoint: @config.endpoint, cache: cache)
     # A local access token map cache
     @access_token_map = @storage.get(STORAGE_KEY[:access_token_map]) || {}
   end
@@ -83,7 +86,7 @@ class LogtoClient
       code: query_params[LogtoCore::QueryKey[:code]]
     )
 
-    # TODO: Verify ID token
+    verify_jwt(token: code_response[:id_token], client_id: @config.app_id)
 
     save_refresh_token(code_response[:refresh_token])
     save_id_token(code_response[:id_token])
@@ -97,9 +100,66 @@ class LogtoClient
     )
     clear_sign_in_session
 
-    if data[:post_redirect_uri]
-      @navigate.call(data[:post_redirect_uri])
-    end
+    @navigate.call(current_session.post_redirect_uri)
+    current_session.post_redirect_uri
+  end
+
+  def verify_jwt(token:, client_id:)
+    raise ArgumentError, "Token must be a string" unless token.is_a?(String)
+    raise ArgumentError, "Client ID must be a string" unless client_id.is_a?(String)
+
+    JWT.decode(
+      token,
+      nil,
+      true,
+      # List our current and future possibilities. It could use the `alg` header from the token,
+      # but it will be tricky to handle the case of caching.
+      algorithms: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "ES256K"],
+      jwks: fetch_jwks,
+      iss: @core.oidc_config[:issuer],
+      verify_iss: true,
+      aud: client_id,
+      verify_aud: true
+    )
+  end
+
+  def id_token
+    @storage.get(STORAGE_KEY[:id_token])
+  end
+
+  def id_token_claims
+    return nil unless (token = id_token)
+    LogtoUtils.parse_json_safe(JWT.decode(token, nil, false).first, LogtoCore::IdTokenClaims)
+  end
+
+  def access_token(resource: nil, organization_id: nil)
+    key = LogtoUtils.build_access_token_key(resource: resource, organization_id: organization_id)
+    return nil unless (token = @access_token_map[key])
+    LogtoCore::AccessToken.new(token).token
+  end
+
+  def access_token_claims(resource: nil, organization_id: nil)
+    raise ArgumentError, "Resource and organization ID cannot be nil at the same time" if
+      resource.nil? && organization_id.nil?
+    return nil unless (token = access_token(resource: resource, organization_id: organization_id))
+    LogtoUtils.parse_json_safe(
+      JWT.decode(token.token, nil, false).first,
+      LogtoCore::AccessTokenClaims
+    )
+  end
+
+  def fetch_user_info
+    raise NotAuthenticatedError, "Not authenticated" unless is_authenticated?
+    puts "token", access_token
+    @core.fetch_user_info(access_token: access_token)
+  end
+
+  def refresh_token
+    @storage.get(STORAGE_KEY[:refresh_token])
+  end
+
+  def is_authenticated?
+    id_token ? true : false
   end
 
   protected
@@ -134,5 +194,22 @@ class LogtoClient
 
   def clear_sign_in_session
     @storage.remove(STORAGE_KEY[:sign_in_session])
+  end
+
+  def fetch_jwks(options = {})
+    if options[:kid_not_found] && (@cache&.get("jwks_last_update")&.< Time.now.to_i - 300)
+      @cache&.remove("jwks")
+    end
+
+    jwks_hash = @cache&.get("jwks") || begin
+      response = JSON.parse(Net::HTTP.get(URI.parse(@core.oidc_config[:jwks_uri])))
+      @cache&.set("jwks", response)
+      @cache&.set("jwks_last_update", Time.now.to_i)
+      response
+    end
+
+    jwks = JWT::JWK::Set.new(jwks_hash)
+    jwks.select! { |key| key[:use] == "sig" } # Signing Keys only
+    jwks
   end
 end

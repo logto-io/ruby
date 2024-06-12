@@ -1,0 +1,4 @@
+<h1>Hello, Rails!</h1>
+<%= link_to "Sign in", sign_in_path %>
+<p>Is authenticated: <%= @client.is_authenticated? %></p>
+<p>ID token: <%= @client.fetch_user_info %></p>

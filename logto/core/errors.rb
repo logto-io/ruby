@@ -18,3 +18,6 @@ end
 
 class LogtoRevocationError < LogtoResponseError
 end
+
+class LogtoUserInfoError < LogtoResponseError
+end

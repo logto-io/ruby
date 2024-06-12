@@ -58,6 +58,26 @@ class LogtoCore
     keyword_init: true
   )
 
+  UserInfoResponse = Struct.new(
+    *IdTokenClaims.members, :custom_data, :identities,
+    keyword_init: true
+  )
+
+  # The claims that are returned in the access token.
+  #
+  # @attr [String] jti The JWT ID of this token.
+  # @attr [String] iss The issuer of this token.
+  # @attr [String] sub The subject (user ID or client ID) of this token.
+  # @attr [String] aud The audience (API resource or organization ID) of this token.
+  # @attr [Integer] exp The expiration time of this token.
+  # @attr [Integer] iat The time at which this token was issued.
+  # @attr [String, nil] client_id The client ID that this token was issued to.
+  # @attr [String] scope The scopes that this token has.
+  AccessTokenClaims = Struct.new(
+    :jti, :iss, :sub, :aud, :exp, :iat, :client_id, :scope, :unknown_keys,
+    keyword_init: true
+  )
+
   # The structured access token.
   #
   # @attr [String] token The access token string.
