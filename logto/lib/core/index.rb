@@ -79,7 +79,7 @@ class LogtoCore
     request = Net::HTTP::Get.new(uri)
     request["Authorization"] = "Bearer #{access_token}"
 
-    response = Net::HTTP.start(uri.host, uri.port) do |http|
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.request(request)
     end
 

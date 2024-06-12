@@ -10,6 +10,4 @@ Gem::Specification.new do |s|
   s.homepage = "https://logto.io/"
   s.metadata = {"source_code_uri" => "https://github.com/logto-io/ruby"}
   s.add_runtime_dependency "jwt", "~> 2.8"
-  s.add_development_dependency "rspec", "~> 3.13"
-  s.add_development_dependency "webmock", "~> 3.23"
 end

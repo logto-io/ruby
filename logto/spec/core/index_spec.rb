@@ -130,6 +130,30 @@ RSpec.describe LogtoCore do
     end
   end
 
+  describe "fetch_user_info" do
+    it "fetches the user info" do
+      # Stub the HTTP request to fetch the user info
+      stub_request(:get, logto_core.oidc_config.userinfo_endpoint)
+        .to_return(
+          status: 200,
+          body: {name: "name"}.to_json,
+          headers: {"Content-Type" => "application/json"}
+        )
+
+      expect(logto_core.fetch_user_info(access_token: "access_token")["name"]).to eq("name")
+    end
+
+    it "raises an error when the request fails" do
+      # Stub the HTTP request to fetch the user info
+      stub_request(:get, logto_core.oidc_config.userinfo_endpoint)
+        .to_return(status: 400)
+
+      expect {
+        logto_core.fetch_user_info(access_token: "access_token")
+      }.to raise_error(LogtoUserInfoError)
+    end
+  end
+
   describe "#generate_sign_in_uri" do
     it "generates the sign-in URI" do
       uri = logto_core.generate_sign_in_uri(

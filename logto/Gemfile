@@ -2,3 +2,7 @@
 
 source "https://rubygems.org"
 gemspec
+
+gem "simplecov", "~> 0.22.0", group: :development
+gem "rspec", "~> 3.13", group: :development
+gem "webmock", "~> 3.23", group: :development
