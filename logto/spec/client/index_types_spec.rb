@@ -1,5 +1,5 @@
 require "rspec"
-require "./client/index_types"
+require "./lib/client/index_types"
 
 RSpec.describe LogtoClient::Config do
   it "initializes with the correct values" do
@@ -12,7 +12,7 @@ RSpec.describe LogtoClient::Config do
       prompt: "prompt"
     )
 
-    expect(config.endpoint).to eq("https://example.com")
+    expect(config.endpoint.to_s).to eq("https://example.com")
     expect(config.app_id).to eq("app_id")
     expect(config.app_secret).to eq("app_secret")
     expect(config.scopes).to eq(["openid", "offline_access", "profile"])

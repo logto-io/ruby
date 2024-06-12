@@ -15,12 +15,13 @@ class LogtoCore
     @oidc_config = fetch_oidc_config
   end
 
-  def revoke(client_id:, token:)
+  def revoke_token(client_id:, client_secret:, token:)
     response = Net::HTTP.post_form(
       URI.parse(oidc_config.revocation_endpoint),
       {
         QueryKey[:token] => token,
-        QueryKey[:client_id] => client_id
+        QueryKey[:client_id] => client_id,
+        QueryKey[:client_secret] => client_secret
       }
     )
 
@@ -50,11 +51,12 @@ class LogtoCore
     LogtoUtils.parse_json_safe(response.body, TokenResponse)
   end
 
-  def fetch_token_by_refresh_token(client_id:, refresh_token:, resource: nil, organization_id: nil, scopes: nil)
+  def fetch_token_by_refresh_token(client_id:, client_secret:, refresh_token:, resource: nil, organization_id: nil, scopes: nil)
     raise ArgumentError, "Scopes must be an array" if scopes && !scopes.is_a?(Array)
 
     parameters = {
       QueryKey[:client_id] => client_id,
+      QueryKey[:client_secret] => client_secret,
       QueryKey[:refresh_token] => refresh_token,
       QueryKey[:grant_type] => TokenGrantType[:refresh_token]
     }

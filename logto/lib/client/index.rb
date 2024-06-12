@@ -62,6 +62,28 @@ class LogtoClient
     @navigate.call(sign_in_uri)
   end
 
+  # Start the sign-out flow with the specified redirect URI. The URI must be
+  # registered in the Logto Console.
+  #
+  # It will also revoke all the tokens and clean up the storage.
+  #
+  # The user will be redirected to that URI after the sign-out flow is completed.
+  # If the `post_logout_redirect_uri` is not specified, the user will be redirected
+  # to a default page.
+  #
+  # @param post_logout_redirect_uri [String] The URI that the user will be redirected to after the sign-out flow is completed.
+  def sign_out(post_logout_redirect_uri: nil)
+    if refresh_token
+      @core.revoke_token(client_id: @config.app_id, client_secret: @config.app_secret, token: refresh_token)
+    end
+
+    uri = @core.generate_sign_out_uri(
+      client_id: @config.app_id, post_logout_redirect_uri: post_logout_redirect_uri
+    )
+    clear_all_tokens
+    @navigate.call(uri)
+  end
+
   def handle_sign_in_callback(url:)
     query_params = URI.decode_www_form(URI(url).query).to_h
     data = @storage.get(STORAGE_KEY[:sign_in_session])
@@ -78,7 +100,7 @@ class LogtoClient
     raise SessionMismatchError, "Session state mismatch" unless current_session.state == query_params[LogtoCore::QueryKey[:state]]
     raise SessionMismatchError, "No code found in query parameters" unless query_params[LogtoCore::QueryKey[:code]]
 
-    code_response = @core.fetch_token_by_authorization_code(
+    token_response = @core.fetch_token_by_authorization_code(
       client_id: @config.app_id,
       client_secret: @config.app_secret,
       redirect_uri: current_session.redirect_uri,
@@ -86,18 +108,8 @@ class LogtoClient
       code: query_params[LogtoCore::QueryKey[:code]]
     )
 
-    verify_jwt(token: code_response[:id_token], client_id: @config.app_id)
-
-    save_refresh_token(code_response[:refresh_token])
-    save_id_token(code_response[:id_token])
-    save_access_token(
-      key: LogtoUtils.build_access_token_key(resource: nil),
-      token: LogtoCore::AccessToken.new(
-        token: code_response[:access_token],
-        scope: code_response[:scope],
-        expires_at: Time.now + code_response[:expires_in].to_i
-      )
-    )
+    verify_jwt(token: token_response[:id_token], client_id: @config.app_id)
+    handle_token_response(token_response)
     clear_sign_in_session
 
     @navigate.call(current_session.post_redirect_uri)
@@ -133,9 +145,28 @@ class LogtoClient
   end
 
   def access_token(resource: nil, organization_id: nil)
+    raise LogtoNotAuthenticatedError if !is_authenticated?
     key = LogtoUtils.build_access_token_key(resource: resource, organization_id: organization_id)
-    return nil unless (token = @access_token_map[key])
-    LogtoCore::AccessToken.new(token).token
+    token = @access_token_map[key]
+
+    # Give it some leeway
+    if token&.[]("expires_at")&.> Time.now - 10
+      return token["token"]
+    end
+
+    @access_token_map.delete(key)
+    return nil unless refresh_token
+
+    # Try to use refresh token to fetch a new access token
+    token_response = @core.fetch_token_by_refresh_token(
+      client_id: @config.app_id,
+      client_secret: @config.app_secret,
+      refresh_token: refresh_token,
+      resource: resource,
+      organization_id: organization_id
+    )
+    handle_token_response(token_response)
+    token_response[:access_token]
   end
 
   def access_token_claims(resource: nil, organization_id: nil)
@@ -143,7 +174,7 @@ class LogtoClient
       resource.nil? && organization_id.nil?
     return nil unless (token = access_token(resource: resource, organization_id: organization_id))
     LogtoUtils.parse_json_safe(
-      JWT.decode(token.token, nil, false).first,
+      JWT.decode(token, nil, false).first,
       LogtoCore::AccessTokenClaims
     )
   end
@@ -162,7 +193,29 @@ class LogtoClient
     id_token ? true : false
   end
 
+  def clear_all_tokens
+    @access_token_map = {}
+    @storage.remove(STORAGE_KEY[:access_token_map])
+    @storage.remove(STORAGE_KEY[:id_token])
+    @storage.remove(STORAGE_KEY[:refresh_token])
+  end
+
   protected
+
+  def handle_token_response(response)
+    raise ArgumentError, "Response must be a TokenResponse" unless response.is_a?(LogtoCore::TokenResponse)
+    response[:refresh_token] && save_refresh_token(response[:refresh_token])
+    response[:id_token] && save_id_token(response[:id_token])
+    # The response should have access token
+    save_access_token(
+      key: LogtoUtils.build_access_token_key(resource: nil),
+      token: LogtoCore::AccessToken.new(
+        token: response[:access_token],
+        scope: response[:scope],
+        expires_at: Time.now + response[:expires_in].to_i
+      )
+    )
+  end
 
   def save_refresh_token(token)
     raise ArgumentError, "Token must be a String" unless token.is_a?(String)
@@ -178,13 +231,6 @@ class LogtoClient
     raise ArgumentError, "Token must be an AccessToken" unless token.is_a?(LogtoCore::AccessToken)
     @access_token_map[key] = token
     @storage.set(STORAGE_KEY[:access_token_map], @access_token_map)
-  end
-
-  def clear_all_tokens
-    @access_token_map = {}
-    @storage.remove(STORAGE_KEY[:access_token_map])
-    @storage.remove(STORAGE_KEY[:id_token])
-    @storage.remove(STORAGE_KEY[:refresh_token])
   end
 
   def save_sign_in_session(data)

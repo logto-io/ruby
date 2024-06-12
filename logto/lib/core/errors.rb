@@ -21,3 +21,6 @@ end
 
 class LogtoUserInfoError < LogtoResponseError
 end
+
+class LogtoNotAuthenticatedError < LogtoError
+end

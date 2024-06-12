@@ -1,3 +1,9 @@
+PATH
+  remote: .
+  specs:
+    logto (0.1.0)
+      jwt (~> 2.8)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -39,7 +45,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  jwt (~> 2.8)
+  logto!
   rspec (~> 3.13)
   webmock (~> 3.23)
 

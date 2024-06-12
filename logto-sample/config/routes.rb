@@ -9,5 +9,6 @@ Rails.application.routes.draw do
   # root "posts#index"
   get "/", to: "sample#index"
   get "/sign-in", to: "sample#sign_in"
+  get "/sign-out", to: "sample#sign_out"
   get "/callback", to: "sample#callback"
 end

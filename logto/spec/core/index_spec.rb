@@ -1,6 +1,6 @@
 require "rspec"
 require "webmock/rspec"
-require "./core/index"
+require "./lib/core"
 
 RSpec.describe LogtoCore do
   let(:endpoint) { "https://example.com" }
@@ -38,13 +38,15 @@ RSpec.describe LogtoCore do
     end
   end
 
-  describe "#revoke" do
+  describe "#revoke_token" do
     it "revokes the token" do
       # Stub the HTTP request to revoke the token
       stub_request(:post, logto_core.oidc_config.revocation_endpoint)
         .to_return(status: 200)
 
-      expect { logto_core.revoke(client_id: "client_id", token: "token") }.not_to raise_error
+      expect {
+        logto_core.revoke_token(client_id: "client_id", client_secret: "client_secret", token: "token")
+      }.not_to raise_error
     end
 
     it "raises an error when the request fails" do
@@ -52,7 +54,11 @@ RSpec.describe LogtoCore do
       stub_request(:post, logto_core.oidc_config.revocation_endpoint)
         .to_return(status: 400)
 
-      expect { logto_core.revoke(client_id: "client_id", token: "token") }.to raise_error(LogtoRevocationError)
+      expect {
+        logto_core.revoke_token(
+          client_id: "client_id", client_secret: "client_secret", token: "token"
+        )
+      }.to raise_error(LogtoRevocationError)
     end
   end
 
@@ -68,6 +74,7 @@ RSpec.describe LogtoCore do
 
       expect(logto_core.fetch_token_by_authorization_code(
         client_id: "client_id",
+        client_secret: "client_secret",
         redirect_uri: "redirect_uri",
         code_verifier: "code_verifier",
         code: "code"
@@ -82,6 +89,7 @@ RSpec.describe LogtoCore do
       expect {
         logto_core.fetch_token_by_authorization_code(
           client_id: "client_id",
+          client_secret: "client_secret",
           redirect_uri: "redirect_uri",
           code_verifier: "code_verifier",
           code: "code"
@@ -102,6 +110,7 @@ RSpec.describe LogtoCore do
 
       expect(logto_core.fetch_token_by_refresh_token(
         client_id: "client_id",
+        client_secret: "client_secret",
         refresh_token: "refresh_token"
       )).to be_a(LogtoCore::TokenResponse)
     end
@@ -114,6 +123,7 @@ RSpec.describe LogtoCore do
       expect {
         logto_core.fetch_token_by_refresh_token(
           client_id: "client_id",
+          client_secret: "client_secret",
           refresh_token: "refresh_token"
         )
       }.to raise_error(LogtoTokenError)
@@ -129,7 +139,7 @@ RSpec.describe LogtoCore do
         state: "state"
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile")
     end
 
     it "generates the sign-in URI with scopes" do
@@ -141,7 +151,7 @@ RSpec.describe LogtoCore do
         scopes: %w[scope1 scope2]
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=scope1+scope2+openid+offline_access+profile")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=scope1+scope2+openid+offline_access+profile")
     end
 
     it "generates the sign-in URI with resources" do
@@ -153,7 +163,7 @@ RSpec.describe LogtoCore do
         resources: %w[resource1 resource2]
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&resource=resource1&resource=resource2")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&resource=resource1&resource=resource2")
     end
 
     it "generates the sign-in URI with prompt" do
@@ -165,7 +175,7 @@ RSpec.describe LogtoCore do
         prompt: %w[prompt1 prompt2]
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=prompt1+prompt2&state=state&response_type=code&scope=openid+offline_access+profile")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=prompt1+prompt2&scope=openid+offline_access+profile")
     end
 
     it "generates the sign-in URI with first_screen and interaction_mode" do
@@ -178,7 +188,7 @@ RSpec.describe LogtoCore do
         interaction_mode: "interaction_mode"
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&first_screen=first_screen")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&first_screen=first_screen")
     end
 
     it "generates the sign-in URI with interaction_mode" do
@@ -190,7 +200,7 @@ RSpec.describe LogtoCore do
         interaction_mode: "interaction_mode"
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&interaction_mode=interaction_mode")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&interaction_mode=interaction_mode")
     end
 
     it "generates the sign-in URI with login_hint" do
@@ -202,7 +212,7 @@ RSpec.describe LogtoCore do
         login_hint: "login_hint"
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&login_hint=login_hint")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&login_hint=login_hint")
     end
 
     it "generates the sign-in URI with direct_sign_in" do
@@ -214,7 +224,7 @@ RSpec.describe LogtoCore do
         direct_sign_in: {method: "method", target: "target"}
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&direct_sign_in=method%3Atarget")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&direct_sign_in=method%3Atarget")
     end
 
     it "generates the sign-in URI with extra_params" do
@@ -226,7 +236,7 @@ RSpec.describe LogtoCore do
         extra_params: {key1: "value1", key2: "value2"}
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=openid+offline_access+profile&key1=value1&key2=value2")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&key1=value1&key2=value2")
     end
 
     it "generates the sign-in URI with no reserved scopes" do
@@ -239,7 +249,7 @@ RSpec.describe LogtoCore do
         include_reserved_scopes: false
       )
 
-      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&=consent&state=state&response_type=code&scope=scope1+scope2")
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=scope1+scope2")
     end
   end
 

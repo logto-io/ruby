@@ -1,4 +1,11 @@
 <h1>Hello, Rails!</h1>
-<%= link_to "Sign in", sign_in_path %>
+
 <p>Is authenticated: <%= @client.is_authenticated? %></p>
-<p>ID token: <%= @client.fetch_user_info %></p>
+
+<% if @client.is_authenticated? %>
+  <%= link_to "Sign out", sign_out_path %>
+  <p>Userinfo: <%= @client.fetch_user_info %></p>
+  <p>Resource access token: <%= @client.access_token_claims(resource: "https://shopping.api/") %></p>
+<% else %>
+  <%= link_to "Sign in", sign_in_path %>
+<% end %>
