@@ -1,4 +1,6 @@
 class LogtoClient
+  # :nocov:
+
   # An abstract class for storing data.
   #
   # This class is used by the Logto client to store the session and token data.
@@ -21,6 +23,7 @@ class LogtoClient
       raise NotImplementedError
     end
   end
+  # :nocov:
 
   # A storage class that stores data in Rails session.
   class SessionStorage < AbstractStorage

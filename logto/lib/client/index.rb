@@ -145,7 +145,7 @@ class LogtoClient
   end
 
   def access_token(resource: nil, organization_id: nil)
-    raise LogtoNotAuthenticatedError if !is_authenticated?
+    raise LogtoNotAuthenticatedError, "Not authenticated" unless is_authenticated?
     key = LogtoUtils.build_access_token_key(resource: resource, organization_id: organization_id)
     token = @access_token_map[key]
 
@@ -180,8 +180,6 @@ class LogtoClient
   end
 
   def fetch_user_info
-    raise NotAuthenticatedError, "Not authenticated" unless is_authenticated?
-    puts "token", access_token
     @core.fetch_user_info(access_token: access_token)
   end
 
