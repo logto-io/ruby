@@ -29,7 +29,8 @@ RSpec.describe LogtoClient::RailsCacheStorage do
     allow(@cache).to receive(:read) { |key| cached_data[key] }
     allow(@cache).to receive(:write) { |key, value, force: false| cached_data[key] = value }
     allow(@cache).to receive(:delete) { |key| cached_data.delete(key) }
-    Rails = double("Rails", cache: @cache)
+    mock_rails = double("Rails", cache: @cache)
+    stub_const("Rails", mock_rails)
   end
 
   it "sets and gets the value" do

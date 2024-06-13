@@ -150,7 +150,7 @@ class LogtoClient
     token = @access_token_map[key]
 
     # Give it some leeway
-    if token&.[]("expires_at")&.> Time.now - 10
+    if token&.[]("expires_at")&.> Time.now + 10
       return token["token"]
     end
 
@@ -241,7 +241,7 @@ class LogtoClient
   end
 
   def fetch_jwks(options = {})
-    if options[:kid_not_found] && (@cache&.get("jwks_last_update")&.< Time.now.to_i - 300)
+    if options[:kid_not_found] && ((@cache&.get("jwks_last_update") || 0) < Time.now.to_i - 300)
       @cache&.remove("jwks")
     end
 
