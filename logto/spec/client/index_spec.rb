@@ -114,27 +114,32 @@ RSpec.describe LogtoClient do
 
   describe "#handle_sign_in_callback" do
     it "raises an error when no sign-in session is found" do
-      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(SessionNotFoundError)
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(LogtoError::SessionNotFoundError)
     end
 
     it "raises an error when the redirect URI mismatch" do
       storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/other"})
-      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(SessionMismatchError)
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(LogtoError::SessionMismatchError)
     end
 
     it "raises an error when no state is found in the query parameters" do
       storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/callback"})
-      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(SessionMismatchError)
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(LogtoError::SessionMismatchError)
     end
 
     it "raises an error when the session state mismatch" do
       storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/callback", state: "state"})
-      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=other") }.to raise_error(SessionMismatchError)
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=other") }.to raise_error(LogtoError::SessionMismatchError)
     end
 
     it "raises an error when no code is found in the query parameters" do
       storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/callback", state: "state"})
-      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state") }.to raise_error(SessionMismatchError)
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state") }.to raise_error(LogtoError::SessionMismatchError)
+    end
+
+    it "raises an error when error is found in the query parameters" do
+      storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/callback", state: "state"})
+      expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state&error=error") }.to raise_error(LogtoError::ServerCallbackError)
     end
 
     it "fetches the token by the authorization code" do
@@ -160,9 +165,8 @@ RSpec.describe LogtoClient do
   end
 
   describe "#verify_jwt" do
-    it "raises ArgumentError when token or client ID is not a string" do
-      expect { basic_client.verify_jwt(token: nil, client_id: "client_id") }.to raise_error(ArgumentError)
-      expect { basic_client.verify_jwt(token: "token", client_id: nil) }.to raise_error(ArgumentError)
+    it "raises ArgumentError when token is not a string" do
+      expect { basic_client.verify_jwt(token: nil) }.to raise_error(ArgumentError)
     end
 
     it "verifies the JWT token" do
@@ -185,7 +189,7 @@ RSpec.describe LogtoClient do
           }.to_json,
           headers: {"Content-Type" => "application/json"}
         )
-      expect { basic_client.verify_jwt(token: token, client_id: "client_id") }.not_to raise_error
+      expect { basic_client.verify_jwt(token: token) }.not_to raise_error
     end
   end
 
@@ -206,7 +210,7 @@ RSpec.describe LogtoClient do
 
   describe "#access_token" do
     it "raises an error when not authenticated" do
-      expect { basic_client.access_token(resource: nil) }.to raise_error(LogtoNotAuthenticatedError)
+      expect { basic_client.access_token(resource: nil) }.to raise_error(LogtoError::NotAuthenticatedError)
     end
 
     it "returns the access token directly when it's stored and not expired" do
@@ -282,7 +286,7 @@ RSpec.describe LogtoClient do
     end
 
     it "raises an error when not authenticated" do
-      expect { basic_client.fetch_user_info }.to raise_error(LogtoNotAuthenticatedError)
+      expect { basic_client.fetch_user_info }.to raise_error(LogtoError::NotAuthenticatedError)
     end
   end
 

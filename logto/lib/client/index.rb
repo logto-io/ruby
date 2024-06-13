@@ -4,13 +4,25 @@ require_relative "index_types"
 require_relative "index_storage"
 require_relative "errors"
 
+# The main client class for the Logto client.
+#
+# It provides the main functionalities for the client to interact with the Logto server.
+#
+# @attr_reader config [LogtoClient::Config] The configuration object for the Logto client.
 class LogtoClient
   attr_reader :config
 
   # @param config [LogtoClient::Config] The configuration object for the Logto client.
   # @param navigate [Proc] The navigation function to be used for the sign-in experience.
+  #   It should accept a URI string as the only argument. You can use the `redirect_to` method in Rails.
+  #   @example
+  #     ->(uri) { redirect_to(uri, allow_other_host: true) }
   # @param storage [LogtoClient::AbstractStorage] The storage object for the Logto client.
+  #   You can use the `LogtoClient::SessionStorage` for Rails applications.
+  #   @example
+  #     LogtoClient::SessionStorage.new(session)
   # @param cache [LogtoClient::AbstractStorage] The cache object for the Logto client.
+  #   By default, it will use the Rails cache.
   def initialize(config:, navigate:, storage:, cache: RailsCacheStorage.new(app_id: config.app_id))
     raise ArgumentError, "Config must be a LogtoClient::Config" unless config.is_a?(LogtoClient::Config)
     raise ArgumentError, "Navigate must be a Proc" unless navigate.is_a?(Proc)
@@ -84,21 +96,26 @@ class LogtoClient
     @navigate.call(uri)
   end
 
+  # Handle the sign-in callback from the redirect URI.
+  #
+  # @param url [String] The URL of the callback from the redirect URI. It should contain the query parameters.
+  # @return [String, nil] The URI that the user will be redirected to after the redirect URI has successfully handled the sign-in callback.
+  #   It should be the same as the `post_redirect_uri` in the `sign_in` method. If it was not set, no redirection will happen.
   def handle_sign_in_callback(url:)
     query_params = URI.decode_www_form(URI(url).query).to_h
     data = @storage.get(STORAGE_KEY[:sign_in_session])
-    raise SessionNotFoundError, "No sign-in session found" unless data
+    raise LogtoError::SessionNotFoundError, "No sign-in session found" unless data
 
     error = query_params[LogtoCore::QUERY_KEY[:error]]
     error_description = query_params[LogtoCore::QUERY_KEY[:error_description]]
-    raise CallbackErrorFromServer, "Error: #{error}, Description: #{error_description}" if error
+    raise LogtoError::ServerCallbackError, "Error: #{error}, Description: #{error_description}" if error
 
     current_session = SignInSession.new(@storage.get(STORAGE_KEY[:sign_in_session]))
     # A loose URI check here
-    raise SessionMismatchError, "Redirect URI mismatch" unless url.start_with?(current_session.redirect_uri)
-    raise SessionMismatchError, "No state found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:state]]
-    raise SessionMismatchError, "Session state mismatch" unless current_session.state == query_params[LogtoCore::QUERY_KEY[:state]]
-    raise SessionMismatchError, "No code found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:code]]
+    raise LogtoError::SessionMismatchError, "Redirect URI mismatch" unless url.start_with?(current_session.redirect_uri)
+    raise LogtoError::SessionMismatchError, "No state found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:state]]
+    raise LogtoError::SessionMismatchError, "Session state mismatch" unless current_session.state == query_params[LogtoCore::QUERY_KEY[:state]]
+    raise LogtoError::SessionMismatchError, "No code found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:code]]
 
     token_response = @core.fetch_token_by_authorization_code(
       client_id: @config.app_id,
@@ -116,9 +133,11 @@ class LogtoClient
     current_session.post_redirect_uri
   end
 
-  def verify_jwt(token:, client_id:)
+  # Verify the JWT token with the configured client ID and the OIDC issuer.
+  #
+  # @param token [String] The JWT token to be verified.
+  def verify_jwt(token:)
     raise ArgumentError, "Token must be a string" unless token.is_a?(String)
-    raise ArgumentError, "Client ID must be a string" unless client_id.is_a?(String)
 
     JWT.decode(
       token,
@@ -130,22 +149,38 @@ class LogtoClient
       jwks: fetch_jwks,
       iss: @core.oidc_config[:issuer],
       verify_iss: true,
-      aud: client_id,
+      aud: @config.app_id,
       verify_aud: true
     )
   end
 
+  # Get the raw ID token from the storage.
+  #
+  # @return [String, nil] The raw ID token.
   def id_token
     @storage.get(STORAGE_KEY[:id_token])
   end
 
+  # Get the ID token claims from the storage.
+  # It will return nil if the ID token is not found.
+  #
+  # @return [LogtoCore::IdTokenClaims, nil] The ID token claims.
   def id_token_claims
     return nil unless (token = id_token)
     LogtoUtils.parse_json_safe(JWT.decode(token, nil, false).first, LogtoCore::IdTokenClaims)
   end
 
+  # Get the access token for the specified resource and organization ID. If both are nil,
+  # it will return the opaque access token for the OpenID Connect UserInfo endpoint.
+  #
+  # If the access token is not found or expired, it will try to use the refresh token to
+  # fetch a new access token, if possible.
+  #
+  # @param resource [String, nil] The resource to be accessed.
+  # @param organization_id [String, nil] The organization ID to be accessed.
+  # @return [String, nil] The access token.
   def access_token(resource: nil, organization_id: nil)
-    raise LogtoNotAuthenticatedError, "Not authenticated" unless is_authenticated?
+    raise LogtoError::NotAuthenticatedError, "Not authenticated" unless is_authenticated?
     key = LogtoUtils.build_access_token_key(resource: resource, organization_id: organization_id)
     token = @access_token_map[key]
 
@@ -169,6 +204,12 @@ class LogtoClient
     token_response[:access_token]
   end
 
+  # Get the access token claims for the specified resource and organization ID. If both are nil,
+  # an ArgumentError will be raised.
+  #
+  # @param resource [String, nil] The resource to be accessed.
+  # @param organization_id [String, nil] The organization ID to be accessed.
+  # @return [LogtoCore::AccessTokenClaims, nil] The access token claims.
   def access_token_claims(resource: nil, organization_id: nil)
     raise ArgumentError, "Resource and organization ID cannot be nil at the same time" if
       resource.nil? && organization_id.nil?
@@ -179,18 +220,30 @@ class LogtoClient
     )
   end
 
+  # Fetch the user information from the OpenID Connect UserInfo endpoint.
+  #
+  # @return [LogtoCore::UserInfoResponse] The user information.
   def fetch_user_info
     @core.fetch_user_info(access_token: access_token)
   end
 
+  # Get the raw refresh token from the storage.
+  #
+  # @return [String, nil] The raw refresh token.
   def refresh_token
     @storage.get(STORAGE_KEY[:refresh_token])
   end
 
+  # Check if the client is authenticated by checking if the ID token is present.
+  #
+  # @return [Boolean] Whether the client is authenticated.
   def is_authenticated?
     id_token ? true : false
   end
 
+  # Clear all the tokens from the storage.
+  #
+  # It will also clear the access token map cache.
   def clear_all_tokens
     @access_token_map = {}
     @storage.remove(STORAGE_KEY[:access_token_map])

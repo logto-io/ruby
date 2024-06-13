@@ -25,7 +25,7 @@ class LogtoCore
       }
     )
 
-    raise LogtoRevocationError.new(response.message, response: response) unless
+    raise LogtoError::RevocationError.new(response.message, response: response) unless
       response.is_a?(Net::HTTPSuccess)
   end
 
@@ -45,7 +45,7 @@ class LogtoCore
       parameters
     )
 
-    raise LogtoTokenError.new(response.message, response: response) unless
+    raise LogtoError::TokenError.new(response.message, response: response) unless
       response.is_a?(Net::HTTPSuccess)
 
     LogtoUtils.parse_json_safe(response.body, TokenResponse)
@@ -69,7 +69,7 @@ class LogtoCore
       parameters
     )
 
-    raise LogtoTokenError.new(response.message, response: response) unless
+    raise LogtoError::TokenError.new(response.message, response: response) unless
       response.is_a?(Net::HTTPSuccess)
     LogtoUtils.parse_json_safe(response.body, TokenResponse)
   end
@@ -83,7 +83,7 @@ class LogtoCore
       http.request(request)
     end
 
-    raise LogtoUserInfoError.new(response.message, response: response) unless
+    raise LogtoError::UserInfoError.new(response.message, response: response) unless
       response.is_a?(Net::HTTPSuccess)
     LogtoUtils.parse_json_safe(response.body, UserInfoResponse)
   end

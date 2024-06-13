@@ -58,6 +58,12 @@ class LogtoCore
     keyword_init: true
   )
 
+  # The claims that are returned in the {https://openid.net/specs/openid-connect-core-1_0.html#UserInfo UserInfo} response.
+  #
+  # @see IdTokenClaims for the common claims that are returned in the ID token.
+  #
+  # @attr [Hash] custom_data The custom data that is stored in the user profile.
+  # @attr [Hash] identities The social sign-in identities that are linked to the user.
   UserInfoResponse = Struct.new(
     *IdTokenClaims.members, :custom_data, :identities,
     keyword_init: true

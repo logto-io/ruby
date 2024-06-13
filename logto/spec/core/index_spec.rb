@@ -58,7 +58,7 @@ RSpec.describe LogtoCore do
         logto_core.revoke_token(
           client_id: "client_id", client_secret: "client_secret", token: "token"
         )
-      }.to raise_error(LogtoRevocationError)
+      }.to raise_error(LogtoError::RevocationError)
     end
   end
 
@@ -94,7 +94,7 @@ RSpec.describe LogtoCore do
           code_verifier: "code_verifier",
           code: "code"
         )
-      }.to raise_error(LogtoTokenError)
+      }.to raise_error(LogtoError::TokenError)
     end
   end
 
@@ -126,7 +126,7 @@ RSpec.describe LogtoCore do
           client_secret: "client_secret",
           refresh_token: "refresh_token"
         )
-      }.to raise_error(LogtoTokenError)
+      }.to raise_error(LogtoError::TokenError)
     end
   end
 
@@ -150,7 +150,7 @@ RSpec.describe LogtoCore do
 
       expect {
         logto_core.fetch_user_info(access_token: "access_token")
-      }.to raise_error(LogtoUserInfoError)
+      }.to raise_error(LogtoError::UserInfoError)
     end
   end
 
