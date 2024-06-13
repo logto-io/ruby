@@ -1,4 +1,5 @@
 require "json"
+require "securerandom"
 require_relative "index_constants"
 
 module LogtoUtils
