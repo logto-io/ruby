@@ -3,7 +3,7 @@
     <picture>
       <source height="60" media="(prefers-color-scheme: dark)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-logo-dark.svg">
       <source height="60" media="(prefers-color-scheme: light)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-logo-light.svg">
-      <img height="60" src="https://github.com/logto-io/logto/raw/master/logo.png" alt="Logto logo">
+      <img height="120" src="https://github.com/logto-io/logto/raw/master/logo.png" alt="Logto logo">
     </picture>
   </a>
   <br/><br/>
