@@ -113,6 +113,23 @@ RSpec.describe LogtoClient do
   end
 
   describe "#handle_sign_in_callback" do
+    let(:stub_request_proc) do
+      proc do
+        stub_request(:post, "https://example.com/oidc/token")
+          .to_return(
+            status: 200,
+            body: {
+              access_token: "access_token",
+              refresh_token: "refresh_token",
+              id_token: "id_token",
+              expires_in: 3600,
+              scope: "openid"
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+    end
+
     it "raises an error when no sign-in session is found" do
       expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?") }.to raise_error(LogtoError::SessionNotFoundError)
     end
@@ -142,21 +159,18 @@ RSpec.describe LogtoClient do
       expect { basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state&error=error") }.to raise_error(LogtoError::ServerCallbackError)
     end
 
+    it "recoginizes the `SignInSession` struct stored in the storage" do
+      storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], LogtoClient::SignInSession.new(redirect_uri: "https://example.com/callback", state: "state"))
+      allow_any_instance_of(LogtoClient).to receive(:verify_jwt).and_return(true)
+      stub_request_proc.call
+      basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state&code=code")
+      expect(storage.get(LogtoClient::STORAGE_KEY[:sign_in_session])).to be_nil
+    end
+
     it "fetches the token by the authorization code" do
       storage.set(LogtoClient::STORAGE_KEY[:sign_in_session], {redirect_uri: "https://example.com/callback", state: "state", code_verifier: "code_verifier"})
       allow_any_instance_of(LogtoClient).to receive(:verify_jwt).and_return(true)
-      stub_request(:post, "https://example.com/oidc/token")
-        .to_return(
-          status: 200,
-          body: {
-            access_token: "access_token",
-            refresh_token: "refresh_token",
-            id_token: "id_token",
-            expires_in: 3600,
-            scope: "openid"
-          }.to_json,
-          headers: {"Content-Type" => "application/json"}
-        )
+      stub_request_proc.call
       basic_client.handle_sign_in_callback(url: "https://example.com/callback?state=state&code=code")
       expect(basic_client.access_token).to eq("access_token")
       expect(basic_client.refresh_token).to eq("refresh_token")
@@ -209,6 +223,17 @@ RSpec.describe LogtoClient do
   end
 
   describe "#access_token" do
+    let(:stub_request_proc) do
+      proc do
+        stub_request(:post, "https://example.com/oidc/token")
+          .to_return(
+            status: 200,
+            body: {access_token: "new_access_token", expires_in: 3600, scope: "openid"}.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+    end
+
     it "raises an error when not authenticated" do
       expect { basic_client.access_token(resource: nil) }.to raise_error(LogtoError::NotAuthenticatedError)
     end
@@ -216,7 +241,7 @@ RSpec.describe LogtoClient do
     it "returns the access token directly when it's stored and not expired" do
       allow_any_instance_of(LogtoClient).to receive(:is_authenticated?).and_return(true)
       storage.set(LogtoClient::STORAGE_KEY[:access_token_map], {
-        ":openid" => LogtoCore::AccessToken.new(
+        ":default" => LogtoCore::AccessToken.new(
           token: "access_token",
           scope: "openid",
           expires_at: Time.now + 3600
@@ -229,22 +254,48 @@ RSpec.describe LogtoClient do
     it "uses the refresh token to fetch a new access token when the stored one is expired" do
       allow_any_instance_of(LogtoClient).to receive(:is_authenticated?).and_return(true)
       storage.set(LogtoClient::STORAGE_KEY[:access_token_map], {
-        ":openid" => LogtoCore::AccessToken.new(
+        ":default" => LogtoCore::AccessToken.new(
           token: "access_token",
           scope: "openid",
           expires_at: Time.now + 5 # Test leeway
         )
       })
       storage.set(LogtoClient::STORAGE_KEY[:refresh_token], "refresh_token")
-
-      stub_request(:post, "https://example.com/oidc/token")
-        .to_return(
-          status: 200,
-          body: {access_token: "new_access_token", expires_in: 3600, scope: "openid"}.to_json,
-          headers: {"Content-Type" => "application/json"}
-        )
-
+      stub_request_proc.call
       expect(basic_client.access_token(resource: nil)).to eq("new_access_token")
+    end
+
+    it "uses the refresh token to fetch a new access token when no access token is stored (resource)" do
+      allow_any_instance_of(LogtoClient).to receive(:is_authenticated?).and_return(true)
+      storage.set(LogtoClient::STORAGE_KEY[:refresh_token], "refresh_token")
+      stub_request_proc.call
+
+      expect(basic_client.access_token(resource: "https://example.com/")).to eq("new_access_token")
+      token_map = storage.get(LogtoClient::STORAGE_KEY[:access_token_map])
+      expect(token_map).to include(":https://example.com/")
+      expect(token_map[":https://example.com/"].token).to eq("new_access_token")
+    end
+
+    it "uses the refresh token to fetch a new access token when no access token is stored (organization ID)" do
+      allow_any_instance_of(LogtoClient).to receive(:is_authenticated?).and_return(true)
+      storage.set(LogtoClient::STORAGE_KEY[:refresh_token], "refresh_token")
+      stub_request_proc.call
+
+      expect(basic_client.access_token(organization_id: "123")).to eq("new_access_token")
+      token_map = storage.get(LogtoClient::STORAGE_KEY[:access_token_map])
+      expect(token_map).to include("#123:default")
+      expect(token_map["#123:default"].token).to eq("new_access_token")
+    end
+
+    it "uses the refresh token to fetch a new access token when no access token is stored (resource and organization ID)" do
+      allow_any_instance_of(LogtoClient).to receive(:is_authenticated?).and_return(true)
+      storage.set(LogtoClient::STORAGE_KEY[:refresh_token], "refresh_token")
+      stub_request_proc.call
+
+      expect(basic_client.access_token(resource: "https://example.com/", organization_id: "123")).to eq("new_access_token")
+      token_map = storage.get(LogtoClient::STORAGE_KEY[:access_token_map])
+      expect(token_map).to include("#123:https://example.com/")
+      expect(token_map["#123:https://example.com/"].token).to eq("new_access_token")
     end
   end
 

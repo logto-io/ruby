@@ -41,6 +41,6 @@ module LogtoUtils
   end
 
   def self.build_access_token_key(resource:, organization_id: nil)
-    "#{organization_id ? "##{organization_id}" : ""}:#{resource || "openid"}"
+    "#{organization_id ? "##{organization_id}" : ""}:#{resource || "default"}"
   end
 end
