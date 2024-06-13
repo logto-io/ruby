@@ -1,0 +1,56 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: main-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  main:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
+        ruby: ['2.7', '3.0', '3.3', jruby]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+        working-directory: logto
+
+      - name: Run tests
+        run: bundle exec rspec
+        working-directory: logto
+
+      - name: Build
+        run: gem build
+        working-directory: logto
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install dependencies and lint
+        run: |
+          gem install standard -v 1.37.0
+          standardrb

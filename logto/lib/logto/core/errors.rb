@@ -1,7 +1,7 @@
 # The base class for all errors in the Logto SDK.
 class LogtoError < StandardError
   def initialize(message)
-    super(message)
+    super
   end
 
   # The base class for response errors from Logto server.
