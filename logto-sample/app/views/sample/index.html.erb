@@ -5,7 +5,8 @@
 <% if @client.is_authenticated? %>
   <%= link_to "Sign out", sign_out_path %>
   <p>Userinfo: <%= @client.fetch_user_info %></p>
-  <p>Resource access token: <%= @client.access_token_claims(resource: "https://shopping.api/") %></p>
+  <!-- Uncomment the following line to fetch the access token claims for a resource -->
+  <!-- <p>Resource access token: <%# @client.access_token_claims(resource: "https://shopping.api/") %></p> -->
 <% else %>
   <%= link_to "Sign in", sign_in_path %>
 <% end %>

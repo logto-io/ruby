@@ -9,11 +9,11 @@ class SampleController < ApplicationController
   end
 
   def sign_in
-    @client.sign_in(redirect_uri: ENV["LOGTO_REDIRECT_URI"], post_redirect_uri: "/")
+    @client.sign_in(redirect_uri: request.base_url + "/callback", post_redirect_uri: "/")
   end
 
   def sign_out
-    @client.sign_out(post_logout_redirect_uri: ENV["LOGTO_POST_LOGOUT_REDIRECT_URI"])
+    @client.sign_out(post_logout_redirect_uri: request.base_url)
   end
 
   def callback
@@ -27,9 +27,10 @@ class SampleController < ApplicationController
       config: LogtoClient::Config.new(
         endpoint: ENV["LOGTO_ENDPOINT"],
         app_id: ENV["LOGTO_APP_ID"],
-        app_secret: ENV["LOGTO_APP_SECRET"],
-        resources: ["https://shopping.api/"],
-        scopes: ["read:resource"]
+        app_secret: ENV["LOGTO_APP_SECRET"]
+        # Uncomment the following lines to specify the scopes and resources that your application needs to access.
+        # resources: ["https://shopping.api/"],
+        # scopes: ["read:resource"]
       ),
       navigate: ->(uri) { redirect_to(uri, allow_other_host: true) },
       storage: LogtoClient::SessionStorage.new(session)
