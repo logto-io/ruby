@@ -1,6 +1,7 @@
 Gem::Specification.new do |s|
   s.name = "logto"
   s.version = "0.1.0"
+  s.required_ruby_version = ">= 2.7.0"
   s.licenses = ["MIT"]
   s.summary = "The Logto SDK for Ruby."
   s.description = "Logto is an open-source Auth0 alternative designed for modern apps and SaaS products."
