@@ -110,7 +110,7 @@ class LogtoClient
     error_description = query_params[LogtoCore::QUERY_KEY[:error_description]]
     raise LogtoError::ServerCallbackError, "Error: #{error}, Description: #{error_description}" if error
 
-    current_session = SignInSession.new(@storage.get(STORAGE_KEY[:sign_in_session]))
+    current_session = data.is_a?(SignInSession) ? data : SignInSession.new(**data)
     # A loose URI check here
     raise LogtoError::SessionMismatchError, "Redirect URI mismatch" unless url.start_with?(current_session.redirect_uri)
     raise LogtoError::SessionMismatchError, "No state found in query parameters" unless query_params[LogtoCore::QUERY_KEY[:state]]
@@ -126,7 +126,7 @@ class LogtoClient
     )
 
     verify_jwt(token: token_response[:id_token])
-    handle_token_response(token_response)
+    handle_token_response(token_response, resource: nil)
     clear_sign_in_session
 
     @navigate.call(current_session.post_redirect_uri)
@@ -200,7 +200,7 @@ class LogtoClient
       resource: resource,
       organization_id: organization_id
     )
-    handle_token_response(token_response)
+    handle_token_response(token_response, resource: resource, organization_id: organization_id)
     token_response[:access_token]
   end
 
@@ -253,13 +253,13 @@ class LogtoClient
 
   protected
 
-  def handle_token_response(response)
+  def handle_token_response(response, resource:, organization_id: nil)
     raise ArgumentError, "Response must be a TokenResponse" unless response.is_a?(LogtoCore::TokenResponse)
     response[:refresh_token] && save_refresh_token(response[:refresh_token])
     response[:id_token] && save_id_token(response[:id_token])
     # The response should have access token
     save_access_token(
-      key: LogtoUtils.build_access_token_key(resource: nil),
+      key: LogtoUtils.build_access_token_key(resource: resource, organization_id: organization_id),
       token: LogtoCore::AccessToken.new(
         token: response[:access_token],
         scope: response[:scope],

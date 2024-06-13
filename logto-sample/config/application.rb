@@ -24,7 +24,10 @@ module LogtoSample
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
     config.session_store(
-      :cookie_store,
+      # We don't use the cookie store since the session data can be large, and
+      # cookies have a size limit of 4KB. Remember to replace it with other stores in
+      # production.
+      :cache_store,
       key: "_logto_sample",
       secure: Rails.env.production?,
       httponly: true,

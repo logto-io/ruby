@@ -36,7 +36,7 @@ RSpec.describe LogtoUtils do
 
   describe "#build_access_token_key" do
     it "builds a key without resource and organization ID" do
-      expect(LogtoUtils.build_access_token_key(resource: nil)).to eq(":openid")
+      expect(LogtoUtils.build_access_token_key(resource: nil)).to eq(":default")
     end
 
     it "builds a key with resource and organization ID" do
@@ -48,7 +48,7 @@ RSpec.describe LogtoUtils do
     end
 
     it "builds a key without resource and with organization ID" do
-      expect(LogtoUtils.build_access_token_key(resource: nil, organization_id: "organization_id")).to eq("#organization_id:openid")
+      expect(LogtoUtils.build_access_token_key(resource: nil, organization_id: "organization_id")).to eq("#organization_id:default")
     end
   end
 end
