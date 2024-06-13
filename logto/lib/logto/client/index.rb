@@ -125,7 +125,7 @@ class LogtoClient
       code: query_params[LogtoCore::QUERY_KEY[:code]]
     )
 
-    verify_jwt(token: token_response[:id_token], client_id: @config.app_id)
+    verify_jwt(token: token_response[:id_token])
     handle_token_response(token_response)
     clear_sign_in_session
 

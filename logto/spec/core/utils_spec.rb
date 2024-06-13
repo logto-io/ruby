@@ -1,5 +1,5 @@
 require "rspec"
-require "./lib/core/utils"
+require "./lib/logto/core/utils"
 
 RSpec.describe LogtoUtils do
   describe "#with_reserved_scopes" do

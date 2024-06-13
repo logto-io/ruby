@@ -1,6 +1,6 @@
 require "rspec"
 require "webmock/rspec"
-require "./lib/core"
+require "./lib/logto/core"
 
 RSpec.describe LogtoCore do
   let(:endpoint) { "https://example.com" }

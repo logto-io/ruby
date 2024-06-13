@@ -1,7 +1,7 @@
 require "jwt"
 require "rspec"
 require "webmock/rspec"
-require "./lib/client"
+require "./lib/logto/client"
 
 class MockStorage < LogtoClient::AbstractStorage
   def initialize

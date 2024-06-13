@@ -1,5 +1,5 @@
 require "rspec"
-require "./lib/client/index_storage"
+require "./lib/logto/client/index_storage"
 
 RSpec.describe LogtoClient::SessionStorage do
   let(:session) { {} }

@@ -1,4 +1,4 @@
-require "../logto/client/index"
+require "logto/client"
 
 class SampleController < ApplicationController
   before_action :initialize_logto_client

@@ -1,5 +1,5 @@
 require "rspec"
-require "./lib/client/index_types"
+require "./lib/logto/client/index_types"
 
 RSpec.describe LogtoClient::Config do
   it "initializes with the correct values" do
