@@ -33,20 +33,20 @@ class LogtoClient
     end
 
     def get(key)
-      @session[getSessionKey(key)]
+      @session[get_session_key(key)]
     end
 
     def set(key, value)
-      @session[getSessionKey(key)] = value
+      @session[get_session_key(key)] = value
     end
 
     def remove(key)
-      @session.delete(getSessionKey(key))
+      @session.delete(get_session_key(key))
     end
 
     protected
 
-    def getSessionKey(key)
+    def get_session_key(key)
       "logto_#{@app_id || "default"}_#{key}"
     end
   end
