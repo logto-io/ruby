@@ -20,7 +20,7 @@ GEM
     jwt (2.8.1)
       base64
     public_suffix (5.0.5)
-    rexml (3.3.3)
+    rexml (3.3.6)
       strscan
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
