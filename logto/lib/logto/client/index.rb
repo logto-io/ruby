@@ -39,12 +39,13 @@ class LogtoClient
   # Triggers the sign-in experience.
   #
   # @param redirect_uri [String] The redirect URI that the user will be redirected to after the sign-in experience is completed.
-  # @param first_screen [String] The first screen that the user will see in the sign-in experience. Can be `signIn` or `register`.
+  # @param first_screen [String] The first screen that the user will see in the sign-in experience. Can be `sign_in`, `register`, `reset_password`, `single_sign_on`, `identifier:sign_in` or `identifier:register`.
+  # @param identifiers [Array<String>] The identifiers to be used for the first screen, only effective when `first_screen` is `identifier:sign_in`, `identifier:register`, or `reset_password`. Available options are `email`, `phone`, `username`.
   # @param login_hint [String] The login hint to be used for the sign-in experience.
   # @param direct_sign_in [Hash] The direct sign-in configuration to be used for the sign-in experience. It should contain the `method` and `target` keys.
   # @param post_redirect_uri [String] The URI that the user will be redirected to after the redirect URI has successfully handled the sign-in callback.
   # @param extra_params [Hash] Extra parameters to be used for the sign-in experience.
-  def sign_in(redirect_uri:, first_screen: nil, login_hint: nil, direct_sign_in: nil, post_redirect_uri: nil, extra_params: nil)
+  def sign_in(redirect_uri:, first_screen: nil, identifiers: nil, login_hint: nil, direct_sign_in: nil, post_redirect_uri: nil, extra_params: nil)
     code_verifier = LogtoUtils.generate_code_verifier
     code_challenge = LogtoUtils.generate_code_challenge(code_verifier)
 
@@ -58,6 +59,7 @@ class LogtoClient
       resources: @config.resources,
       prompt: @config.prompt,
       first_screen: first_screen,
+      identifiers: identifiers,
       login_hint: login_hint,
       direct_sign_in: direct_sign_in,
       extra_params: extra_params

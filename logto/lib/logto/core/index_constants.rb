@@ -22,6 +22,7 @@ class LogtoCore
     login_hint: "login_hint",
     direct_sign_in: "direct_sign_in",
     first_screen: "first_screen",
+    identifier: "identifier",
     interaction_mode: "interaction_mode",
     error: "error",
     error_description: "error_description"

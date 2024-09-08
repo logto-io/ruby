@@ -88,7 +88,22 @@ class LogtoCore
     LogtoUtils.parse_json_safe(response.body, UserInfoResponse)
   end
 
-  def generate_sign_in_uri(client_id:, redirect_uri:, code_challenge:, state:, scopes: nil, resources: nil, prompt: nil, first_screen: nil, interaction_mode: nil, login_hint: nil, direct_sign_in: nil, extra_params: nil, include_reserved_scopes: true)
+  def generate_sign_in_uri(
+    client_id:,
+    redirect_uri:,
+    code_challenge:,
+    state:,
+    scopes: nil,
+    resources: nil,
+    prompt: nil,
+    first_screen: nil,
+    identifiers: nil,
+    interaction_mode: nil,
+    login_hint: nil,
+    direct_sign_in: nil,
+    extra_params: nil,
+    include_reserved_scopes: true
+  )
     parameters = {
       QUERY_KEY[:client_id] => client_id,
       QUERY_KEY[:redirect_uri] => redirect_uri,
@@ -116,6 +131,8 @@ class LogtoCore
     elsif interaction_mode
       parameters[QUERY_KEY[:interaction_mode]] = interaction_mode
     end
+
+    parameters[QUERY_KEY[:identifier]] = identifiers.join(" ") if identifiers&.any?
 
     extra_params&.each do |key, value|
       parameters[key] = value
