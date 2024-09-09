@@ -227,6 +227,19 @@ RSpec.describe LogtoCore do
       expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&interaction_mode=interaction_mode")
     end
 
+    it "generates the sign-in URI with identifiers" do
+      uri = logto_core.generate_sign_in_uri(
+        client_id: "client_id",
+        redirect_uri: "https://example.com/callback",
+        code_challenge: "code_challenge",
+        state: "state",
+        first_screen: "identifier:sign_in",
+        identifiers: %w[email phone]
+      )
+
+      expect(uri).to eq("https://example.com/oidc/auth?client_id=client_id&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&code_challenge=code_challenge&code_challenge_method=S256&state=state&response_type=code&prompt=consent&scope=openid+offline_access+profile&first_screen=identifier%3Asign_in&identifier=email+phone")
+    end
+
     it "generates the sign-in URI with login_hint" do
       uri = logto_core.generate_sign_in_uri(
         client_id: "client_id",
