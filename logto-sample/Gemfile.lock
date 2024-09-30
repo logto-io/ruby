@@ -1,7 +1,7 @@
 PATH
   remote: ../logto
   specs:
-    logto (0.1.0)
+    logto (0.2.0)
       jwt (~> 2.8)
 
 GEM
