@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "logto"
-  s.version = "0.1.0"
+  s.version = "0.2.0"
   s.required_ruby_version = ">= 2.7.0"
   s.licenses = ["MIT"]
   s.summary = "The Logto SDK for Ruby."
