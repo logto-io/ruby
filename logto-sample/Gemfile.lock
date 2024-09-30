@@ -205,7 +205,7 @@ GEM
     regexp_parser (2.9.2)
     reline (0.5.9)
       io-console (~> 0.5)
-    rexml (3.3.3)
+    rexml (3.3.6)
       strscan
     rubyzip (2.3.2)
     securerandom (0.3.1)
