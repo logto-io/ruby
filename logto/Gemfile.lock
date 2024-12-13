@@ -20,8 +20,7 @@ GEM
     jwt (2.8.1)
       base64
     public_suffix (5.0.5)
-    rexml (3.3.6)
-      strscan
+    rexml (3.3.9)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -41,7 +40,6 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    strscan (3.1.0)
     webmock (3.23.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
