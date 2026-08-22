@@ -1,13 +1,11 @@
 <p align="center">
   <a href="https://logto.io" target="_blank" align="center" alt="Logto Logo">
     <picture>
-      <source height="60" media="(prefers-color-scheme: dark)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-logo-dark.svg">
-      <source height="60" media="(prefers-color-scheme: light)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-logo-light.svg">
-      <img height="60" src="https://github.com/logto-io/logto/raw/master/logo.png" alt="Logto logo">
+      <source width="200" media="(prefers-color-scheme: dark)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-lockup-brand-on-dark.svg">
+      <source width="200" media="(prefers-color-scheme: light)" srcset="https://github.com/logto-io/.github/raw/master/profile/logto-lockup-brand-on-light.svg">
+      <img width="200" src="https://github.com/logto-io/.github/raw/master/profile/logto-lockup-brand-on-light.svg" alt="Logto logo">
     </picture>
   </a>
-  <br/><br/>
-  <span><i><a href="https://logto.io" target="_blank">Logto</a> is an open-source Auth0 alternative designed for modern apps and SaaS products.</i></span>
 </p>
 
 # Logto Ruby on Rails sample
