@@ -15,7 +15,6 @@ GEM
       bigdecimal
       rexml
     diff-lcs (1.5.1)
-    docile (1.4.0)
     hashdiff (1.1.0)
     jwt (2.8.1)
       base64
@@ -34,12 +33,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.1)
-    simplecov (0.22.0)
-      docile (~> 1.1)
-      simplecov-html (~> 0.11)
-      simplecov_json_formatter (~> 0.1)
-    simplecov-html (0.12.3)
-    simplecov_json_formatter (0.1.4)
+    simplecov (1.2.0)
     webmock (3.23.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
@@ -52,7 +46,7 @@ PLATFORMS
 DEPENDENCIES
   logto!
   rspec (~> 3.13)
-  simplecov (~> 0.22.0)
+  simplecov (~> 1.2.0)
   webmock (~> 3.23)
 
 BUNDLED WITH
