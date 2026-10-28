@@ -17,7 +17,9 @@ jobs:
       matrix:
         # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
         ruby: ['2.7', '3.0', '3.3', jruby]
-    runs-on: ubuntu-latest
+    # `ubuntu-latest` now resolves to ubuntu-26.04, which ruby/setup-ruby has no Ruby 2.7 or 3.0 builds for.
+    # Pin the image while the matrix still covers those versions.
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
