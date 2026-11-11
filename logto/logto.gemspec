@@ -10,5 +10,5 @@ Gem::Specification.new do |s|
   s.files = Dir["LICENSE", "README.md", "lib/**/*"]
   s.homepage = "https://logto.io/"
   s.metadata = {"source_code_uri" => "https://github.com/logto-io/ruby"}
-  s.add_runtime_dependency "jwt", "~> 2.8"
+  s.add_runtime_dependency "jwt", "~> 3.0"
 end
